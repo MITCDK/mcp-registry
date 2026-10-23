@@ -20,6 +20,11 @@ RUN go build -o /security-reviewer/build/reviewer ./reviewer
 RUN go build -o /security-reviewer/build/proxy ./proxy
 
 
+# Pin Node.js to the October 2026 security release (CVE-2026-111497).
+# Debian trixie apt ships nodejs 20.19.2, which is EOL.
+FROM node:22.23.4-trixie-slim AS nodejs
+
+
 # Use a debian image to host the agent.
 FROM debian:trixie-slim AS reviewer-image
 
@@ -38,11 +43,13 @@ RUN apt-get update \
         git \
         gnupg \
         jq \
-        nodejs \
-        npm \
+        libstdc++6 \
         ripgrep \
         unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Install patched Node.js 22.23.4 (and npm) from the official image.
+COPY --from=nodejs /usr/local /usr/local
 
 # Install Claude Code and Codex CLIs for headless operation.
 COPY .npmrc .
